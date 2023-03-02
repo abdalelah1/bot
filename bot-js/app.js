@@ -1,4 +1,6 @@
 const bodyParser = require('body-parser');
+const { productCategory, myFunction2 } = require('./bot-functions');
+
 const express = require('express');
 const app = express().use(bodyParser.json());
 const PORT = process.env.PORT || 3000;
@@ -9,9 +11,9 @@ const mysql = require('mysql')
 var mysqlConnection = mysql.createConnection({
     host: 'localhost',
     port: '3306',
-    user: 'test',
+    user: 'test',   
     password: '1234',
-    database: 'test',
+    database: 'bookdb',
     multipleStatements: true
 });
 mysqlConnection.connect(function (err) {
@@ -20,6 +22,7 @@ mysqlConnection.connect(function (err) {
 });
 
 app.post('/webhook', (request, response) => {
+    let intents = new Map()
     console.log('from post')
     const _agent = new WebhookClient({ request: request, response: response });
     function welcome(agent) {
@@ -27,15 +30,42 @@ app.post('/webhook', (request, response) => {
         return agent.add('welcome to abdalelah agent!')
 
     }
-   
-    console.log('from end welcome')
+    
+    if (_agent.intent=='product-info') 
+    {
+        mysqlConnection.query('SELECT * FROM mainapp_category', (err, rows, fields) => {
+            if (!err) {
+              let listofCategory=[];
+                function product_category(agent) {
+                    
+                   for (i in rows)
+                   {
+                    listofCategory.push(rows[i].Category_name)
+                   }
+                    console.log('from product_category',listofCategory)
+                    return agent.add(['we have this category ',...listofCategory])     
+                }
+                intents.set('product-info',product_category)
+                _agent.handleRequest(intents)
+            }
+            else
+                console.log(err)
+        }    
+    )
+            
+    }
+    else {
+    console.log(productCategory())
+    console.log('from end intent',_agent.intent )
     function welcome(agent) {
         return agent.add('welcome to radfaatttt agent!')
     }
-    let intents = new Map()
-    intents.set('Default Welcome Intent', welcome)
     console.log(_agent.query)
-    _agent.handleRequest(intents)
+    console.log(_agent.parameters)
+   
+}
+ 
+  
 
 
 
@@ -45,26 +75,9 @@ app.post('/webhook', (request, response) => {
 app.get('/', (req, res) => {
     var data = {};
     queries = 'SELECT * FROM NAME';
-    mysqlConnection.query('SELECT * FROM name', (err, rows, fields) => {
-        if (!err) {
 
-            console.log(rows[0].id)
-            console.log(rows)
-            
-            res.status(200).send((rows[0].id).toString())
-
-
-        }
-        else
-            console.log(err)
-
-
-
-    }
-
-    )
-
-})
+}
+)
 app.listen(PORT, (error) => {
     if (!error)
         console.log(`Server is Successfully Running,
